@@ -23,7 +23,7 @@ const UsernamePrompt: React.FC<UsernamePromptProps> = ({ open, onClose }) => {
   if (!open) return null;
 
   return (
-<div className="fixed inset-0 flex items-center justify-center backdrop-blur-md bg-black/30">
+    <div className="fixed inset-0 flex items-center justify-center backdrop-blur-md bg-black/30">
       <div className="bg-white/90 p-6 rounded-lg shadow-lg w-96 border border-white/20">
         <h2 className="text-xl font-semibold text-center mb-4 text-black">
           Enter Your Name

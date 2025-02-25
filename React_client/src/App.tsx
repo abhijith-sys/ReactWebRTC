@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate,  useParams } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import LandingPage from './pages/LandingPage.tsx';
 import { Toaster } from './components/ui/sonner.tsx'

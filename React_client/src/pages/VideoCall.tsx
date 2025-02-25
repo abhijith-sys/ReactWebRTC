@@ -199,7 +199,7 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
 
   const leaveCall = () => {
     stream?.getTracks().forEach((track) => track.stop());
-    socket.disconnect();
+    // socket.disconnect();
     navigate(`/`);
   };
 

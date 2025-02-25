@@ -5,6 +5,7 @@ import { Socket } from 'socket.io-client';
 import { ModeToggle } from '@/components/mode-toggle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { log } from 'console';
 
 interface Props {
  socket: Socket;
@@ -32,6 +33,8 @@ const LandingPage: React.FC<Props> = ({ socket }) => {
   };
 
   const createRoom = (name: string) => {
+    console.log(name,socket);
+    
     socket.emit('create-room', (newRoomId: string) => {
       navigate(`/room/${newRoomId}/${name}`);
     });
