@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { io } from 'socket.io-client';
 import VideoCall from './components/VideoCall';
-import LandingPage from './components/LandingPage';
 import global from 'global'
 import * as process from "process";
+import LandingPage from './pages/LandingPage/LandingPage';
 global.process = process;
 
 const socket = io('http://localhost:5000');
@@ -25,13 +25,13 @@ function App() {
   };
 
   return (
-    <div>
+    <>
       {roomId ? (
         <VideoCall socket={socket} roomId={roomId} userName={userName} />
       ) : (
         <LandingPage joinRoom={joinRoom} createRoom={createRoom} />
       )}
-    </div>
+    </>
   );
 }
 

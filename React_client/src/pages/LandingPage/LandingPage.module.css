@@ -1,0 +1,160 @@
+.container {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    height: 100vh;
+    width: 100%;
+    background-color: #f8f9fa;
+
+}
+
+.leftSection {
+    width: 40%;
+    padding-left: 10%;
+}
+
+.rightSection {
+    width: 40%;
+    padding-right: 10%;
+}
+
+.title {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.subtitle {
+    color: #5f6368;
+    margin-bottom: 20px;
+}
+
+.inputContainer {
+    margin-bottom: 15px;
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.newMeetingBtn {
+    background-color: #1a73e8;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    min-width: 77px;
+}
+
+.newMeetingBtn:disabled {
+    background-color: #b0b3b8;
+    cursor: not-allowed;
+}
+
+.newMeetingBtn:hover:not(:disabled) {
+    background-color: #135abc;
+}
+
+.input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 200px;
+}
+
+
+.inputName {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 40%;
+    min-width: 400px;
+}
+
+.joinBtn {
+    background-color: #1a73e8;
+    color: white;
+    border: none;
+    cursor: pointer;
+    padding: 10px 20px;
+    border-radius: 5px;
+}
+
+.joinBtn:disabled {
+    background-color: #b0b3b8;
+    cursor: not-allowed;
+}
+
+.rightSection {
+    text-align: center;
+    width: 45%;
+}
+
+.image {
+    width: 80%;
+    margin-bottom: 10px;
+}
+
+.planText {
+    color: #5f6368;
+}
+
+.highlight {
+    color: #1a73e8;
+}
+
+
+@media (max-width: 1153px) {
+    .container {
+        flex-direction: column;
+        text-align: center;
+        justify-content: center;
+        gap: 20px;
+    }
+
+    .leftSection {
+        display: flex;
+        justify-content: space-around;
+        flex-direction: column;
+        padding-left: 0%;
+        width: auto;
+    }
+
+    .image {
+        width: 100%
+    }
+
+    .rightSection {
+        width: 40%;
+        padding-right: 0%;
+    }
+
+    .inputName {
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        width: 20%;
+        min-width: 300px;
+    }
+
+    .actions {
+        flex-direction: column;
+    }
+
+    .joinBtn {
+        min-width: 320px;
+    }
+
+    .newMeetingBtn
+    {
+        min-width: 320px;
+    }
+     .input{
+        min-width: 300px;
+    }
+    .inputContainer{
+        min-width: 300px;
+    }
+}
