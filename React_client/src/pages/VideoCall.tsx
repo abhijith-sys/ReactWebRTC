@@ -158,7 +158,7 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
     });
 
     peer.on("error", (err) => console.error("Peer error in createPeer:", err));
-    peer.on("stream", () => {});
+    peer.on("stream", () => { });
 
     return peer;
   };
@@ -176,7 +176,7 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
     });
 
     peer.on("error", (err) => console.error("Peer error in addPeer:", err));
-    peer.on("stream", () => {});
+    peer.on("stream", () => { });
 
     return peer;
   };
@@ -219,7 +219,7 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
     );
   }
 
-  const share =()=>{
+  const share = () => {
     const currentUrl = `${window.location.origin}/room/${roomId}`;
     navigator.clipboard.writeText(currentUrl);
     toast("Room ID copied to clipboard");
@@ -245,123 +245,122 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
       </div>
 
       <div className="flex flex-1">
-      <div className="flex-1 p-4">
-  <div className="grid gap-2 mb-4 h-[calc(100vh-180px)] auto-rows-fr"
-    style={{
-      gridTemplateColumns: `repeat(auto-fit, minmax(16rem, 1fr))`
-    }}
-  >
-    {/* Current user's video */}
-    {stream && (
-      <div className="relative w-full h-full" style={{ aspectRatio: '16/9' }}>
-        <div className="w-full h-full bg-gray-200 dark:bg-gray-800 rounded-lg overflow-hidden">
-          <video 
-            ref={myVideo} 
-            autoPlay 
-            muted 
-            className="w-full h-full object-cover"
-          />
-        </div>
-        {!videoEnabled && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-            <span className="text-white">Your video is currently turned off</span>
+        <div className="flex-1 p-4">
+          <div className="grid gap-2 mb-4 h-[calc(100vh-180px)] auto-rows-fr"
+            style={{
+              gridTemplateColumns: `repeat(auto-fit, minmax(16rem, 1fr))`
+            }}
+          >
+            {/* Current user's video */}
+            {stream && (
+              <div className="relative w-full h-full" style={{ aspectRatio: '16/9' }}>
+                <div className="w-full h-full bg-gray-200 dark:bg-gray-800 rounded-lg overflow-hidden">
+                  <video
+                    ref={myVideo}
+                    autoPlay
+                    muted
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                {!videoEnabled && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                    <span className="text-white">Your video is currently turned off</span>
+                  </div>
+                )}
+                <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+                  <span className="text-sm bg-black/50 px-2 py-1 rounded">{userName} (You)</span>
+                </div>
+              </div>
+            )}
+
+            {/* Peer videos */}
+            {peers?.length > 0 && peers.map((participant) => (
+              <div
+                key={participant.userId}
+                className="relative w-full h-full"
+                style={{ aspectRatio: '16/9' }}
+              >
+                <div className="w-full h-full bg-gray-200 dark:bg-gray-800 rounded-lg overflow-hidden">
+                  <Video peer={participant.peer} userName={participant.userName} />
+                </div>
+                <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+                  <span className="text-sm bg-black/50 px-2 py-1 rounded">{participant.userName}</span>
+                </div>
+              </div>
+            ))}
+
+            {/* No participants case */}
+            {!peers?.length && !stream && (
+              <div className="relative w-full h-full" style={{ aspectRatio: '16/9' }}>
+                <div className="w-full h-full bg-gray-200 dark:bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center">
+                  <span className="text-sm bg-black/50 px-2 py-1 rounded">No participants</span>
+                </div>
+              </div>
+            )}
           </div>
-        )}
-        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-          <span className="text-sm bg-black/50 px-2 py-1 rounded">{userName} (You)</span>
-        </div>
-      </div>
-    )}
 
-    {/* Peer videos */}
-    {peers?.length > 0 && peers.map((participant) => (
-      <div 
-        key={participant.userId}
-        className="relative w-full h-full"
-        style={{ aspectRatio: '16/9' }}
-      >
-        <div className="w-full h-full bg-gray-200 dark:bg-gray-800 rounded-lg overflow-hidden">
-          <Video peer={participant.peer} userName={participant.userName} />
+          <div className="flex items-center justify-between mt-4 px-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500 dark:text-gray-400">{roomId}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-gray-500 dark:text-gray-400"
+                onClick={share}
+              >
+                <Share2 className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="destructive" size="icon" onClick={toggleAudio} disabled={!stream}>
+                {audioEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+              </Button>
+              <Button
+                variant="destructive"
+                size="icon"
+                onClick={toggleVideo}
+                disabled={!stream}
+              >
+                {videoEnabled ? <VIcon className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="bg-gray-200 dark:bg-gray-800"
+                onClick={share}
+              >
+                <Share2 className="w-4 h-4" />
+              </Button>
+              <Button variant="destructive" onClick={leaveCall}>
+                Leave Meet
+              </Button>
+            </div>
+          </div>
         </div>
-        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-          <span className="text-sm bg-black/50 px-2 py-1 rounded">{participant.userName}</span>
-        </div>
-      </div>
-    ))}
-
-    {/* No participants case */}
-    {!peers?.length && !stream && (
-      <div className="relative w-full h-full" style={{ aspectRatio: '16/9' }}>
-        <div className="w-full h-full bg-gray-200 dark:bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center">
-          <span className="text-sm bg-black/50 px-2 py-1 rounded">No participants</span>
-        </div>
-      </div>
-    )}
-  </div>
-
-  <div className="flex items-center justify-between mt-4 px-4">
-    <div className="flex items-center gap-2">
-      <span className="text-sm text-gray-500 dark:text-gray-400">{roomId}</span>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="text-gray-500 dark:text-gray-400"
-        onClick={share}
-      >
-        <Share2 className="w-4 h-4" />
-      </Button>
-    </div>
-    <div className="flex items-center gap-2">
-      <Button variant="destructive" size="icon" onClick={toggleAudio} disabled={!stream}>
-        {audioEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
-      </Button>
-      <Button
-        variant="destructive"
-        size="icon"
-        onClick={toggleVideo}
-        disabled={!stream}
-      >
-        {videoEnabled ? <VIcon className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="bg-gray-200 dark:bg-gray-800"
-        onClick={share}
-      >
-        <Share2 className="w-4 h-4" />
-      </Button>
-      <Button variant="destructive" onClick={leaveCall}>
-        Leave Meet
-      </Button>
-    </div>
-  </div>
-</div>
 
         <div className="w-80 border-l border-gray-300 dark:border-gray-800">
           <div className="h-full flex flex-col">
-          <ScrollArea
+            <ScrollArea
               style={{
                 height: "calc(100dvh - 130px)",
               }}
             >
-            <div ref={chatScrollRef} className="flex-1 p-4 space-y-4 overflow-auto">
-              {messages.map((message) => (
-                <div key={message.id} className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{message.sender}</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{message.time}</span>
+              <div ref={chatScrollRef} className="flex-1 p-4 space-y-4 overflow-auto">
+                {messages.map((message) => (
+                  <div key={message.id} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{message.sender}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{message.time}</span>
+                    </div>
+                    <p
+                      className={`text-sm ${message.isLink ? "text-blue-400" : "text-gray-600 dark:text-gray-300"
+                        }`}
+                    >
+                      {message.content}
+                    </p>
                   </div>
-                  <p
-                    className={`text-sm ${
-                      message.isLink ? "text-blue-400" : "text-gray-600 dark:text-gray-300"
-                    }`}
-                  >
-                    {message.content}
-                  </p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
             </ScrollArea>
             <div className="p-4 border-t border-gray-300 dark:border-gray-800">
               <div className="flex gap-2">
@@ -409,7 +408,7 @@ const Video: React.FC<{ peer: SimplePeer.Instance; userName: string }> = ({ peer
   }, [peer, userName]);
 
   return (
-    <video ref={ref} autoPlay  className="w-full h-full object-cover">
+    <video ref={ref} autoPlay className="w-full h-full object-cover">
       <track kind="captions" />
     </video>
   );
