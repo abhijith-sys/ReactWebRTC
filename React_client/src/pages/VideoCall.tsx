@@ -244,8 +244,8 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
         </div>
       </div>
 
-      <div className="flex flex-1">
-        <div className="flex-1 p-4">
+      <div className="flex flex-1 flex-col lg:flex-row ">
+        <div className="flex-2 p-4">
           <div className="grid gap-2 mb-4 h-[calc(100vh-180px)] auto-rows-fr"
             style={{
               gridTemplateColumns: `repeat(auto-fit, minmax(16rem, 1fr))`
