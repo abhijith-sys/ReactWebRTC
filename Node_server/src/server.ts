@@ -7,49 +7,45 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: '*', // Adjust for production (e.g., 'http://localhost:3000')
+    origin: '*',
     methods: ['GET', 'POST'],
   },
 });
-// Extend the Socket type to include userName
+
 interface CustomSocket extends Socket {
   userName?: string;
 }
 
-io.on('connection', (socket) => {
+io.on('connection', (socket: CustomSocket) => {
   console.log('User connected:', socket.id);
 
-  // Handle room creation
   socket.on('create-room', (callback: (roomId: string) => void) => {
     const roomId = uuidv4();
     console.log(`Room created: ${roomId} by ${socket.id}`);
     callback(roomId);
   });
 
-  // User joins a room
-  socket.on('join-room', (roomId: string, userId: string) => {
+  socket.on('join-room', (roomId: string, userId: string, userName: string) => {
+    socket.userName = userName; // Store username on socket
     socket.join(roomId);
-    console.log(`${socket.id} joined room ${roomId}`);
+    console.log(`${socket.id} (${userName}) joined room ${roomId}`);
 
-    // Get all users in the room except the new joiner
-    const users = Array.from(io.sockets.adapter.rooms.get(roomId) || []).filter(
-      (id) => id !== socket.id
-    );
-    console.log(`Users in room ${roomId} before join:`, users);
+    const users = Array.from(io.sockets.adapter.rooms.get(roomId) || [])
+      .filter((id) => id !== socket.id)
+      .map((id) => ({
+        userId: id,
+        userName: (io.sockets.sockets.get(id) as CustomSocket)?.userName || 'Unknown',
+      }));
 
-    // Send existing users to the new joiner first (initiators will send offers)
     socket.emit('all-users', users);
 
-    // Notify existing users of the new joiner (receivers will wait for offers)
-    socket.to(roomId).emit('user-connected', socket.id);
+    socket.to(roomId).emit('user-connected', { userId: socket.id, userName });
 
-    // Handle signaling data
     socket.on('signal', (data: { userId: string; signal: any }) => {
       console.log(`Relaying signal from ${socket.id} to ${data.userId}:`, data.signal);
       io.to(data.userId).emit('signal', { userId: socket.id, signal: data.signal });
     });
 
-    // User disconnects
     socket.on('disconnect', () => {
       console.log('User disconnected:', socket.id);
       socket.to(roomId).emit('user-disconnected', socket.id);
