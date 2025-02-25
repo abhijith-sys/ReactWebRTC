@@ -26,7 +26,7 @@ io.on('connection', (socket: CustomSocket) => {
   });
 
   socket.on('join-room', (roomId: string, userId: string, userName: string) => {
-    socket.userName = userName; // Store username on socket
+    socket.userName = userName;
     socket.join(roomId);
     console.log(`${socket.id} (${userName}) joined room ${roomId}`);
 
@@ -37,9 +37,11 @@ io.on('connection', (socket: CustomSocket) => {
         userName: (io.sockets.sockets.get(id) as CustomSocket)?.userName || 'Unknown',
       }));
 
+    // Send existing users to the new joiner
     socket.emit('all-users', users);
 
-    socket.to(roomId).emit('user-connected', { userId: socket.id, userName });
+    // Notify existing users of the new joiner AND include their own userId so they can initiate
+    socket.to(roomId).emit('user-connected', { userId: socket.id, userName, callerId: socket.id });
 
     socket.on('signal', (data: { userId: string; signal: any }) => {
       console.log(`Relaying signal from ${socket.id} to ${data.userId}:`, data.signal);
@@ -56,4 +58,4 @@ io.on('connection', (socket: CustomSocket) => {
 const PORT = 5000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-});
+}); 

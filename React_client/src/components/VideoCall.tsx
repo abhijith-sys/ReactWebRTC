@@ -40,21 +40,20 @@ const VideoCall: React.FC<Props> = ({ socket, roomId, userName }) => {
             return;
           }
           const newPeers: PeerData[] = [];
-          const uniqueUsers = users.filter((u) => u.userId !== socket.id);
-          uniqueUsers.forEach(({ userId, userName }) => {
+          users.forEach(({ userId, userName }) => {
             if (!peersRef.current.some((p) => p.userId === userId)) {
-              const peer = createPeer(userId, socket.id, mediaStream);
+              const peer = createPeer(userId, socket.id, mediaStream); // New user initiates
               newPeers.push({ peer, userId, userName });
               peersRef.current.push({ peer, userId, userName });
             }
           });
-          setPeers(newPeers);
+          setPeers((prev) => [...prev, ...newPeers]);
         });
 
         socket.on('user-connected', ({ userId, userName }: { userId: string; userName: string }) => {
           if (!mediaStream || userId === socket.id) return;
           if (!peersRef.current.some((p) => p.userId === userId)) {
-            const peer = addPeer(userId, socket.id, mediaStream);
+            const peer = addPeer(userId, socket.id, mediaStream); // Existing users wait for offer
             peersRef.current.push({ peer, userId, userName });
             setPeers((prev) => [...prev, { peer, userId, userName }]);
           }
@@ -63,17 +62,12 @@ const VideoCall: React.FC<Props> = ({ socket, roomId, userName }) => {
         socket.on('signal', (data: { userId: string; signal: any }) => {
           const item = peersRef.current.find((p) => p.userId === data.userId);
           if (item && !item.peer.destroyed) {
-            const signalKey = data.signal.sdp || JSON.stringify(data.signal.candidate);
+            const signalKey = data.signal.sdp || JSON.stringify(data.signal.candidate || {});
             if (!processedSignals.current.has(signalKey)) {
               processedSignals.current.add(signalKey);
+              console.log(`Signaling ${data.userId} with`, data.signal);
               item.peer.signal(data.signal);
             }
-          } else if (data.signal.type === 'offer') {
-            const peer = addPeer(data.userId, socket.id, mediaStream);
-            const unknownUserName = 'Unknown';
-            peersRef.current.push({ peer, userId: data.userId, userName: unknownUserName });
-            peer.signal(data.signal);
-            setPeers((prev) => [...prev, { peer, userId: data.userId, userName: unknownUserName }]);
           }
         });
 
@@ -120,6 +114,13 @@ const VideoCall: React.FC<Props> = ({ socket, roomId, userName }) => {
     });
 
     peer.on('error', (err) => console.error('Peer error in createPeer:', err));
+    peer.on('stream', (remoteStream) => {
+      console.log(`Received stream from ${userToSignal}`);
+      // Ensure the peer is in the state before updating
+      const peerData = peersRef.current.find((p) => p.userId === userToSignal);
+      if (peerData) peerData.peer = peer; // Update peer reference
+    });
+
     return peer;
   };
 
@@ -136,6 +137,13 @@ const VideoCall: React.FC<Props> = ({ socket, roomId, userName }) => {
     });
 
     peer.on('error', (err) => console.error('Peer error in addPeer:', err));
+    peer.on('stream', (remoteStream) => {
+      console.log(`Received stream from ${incomingUserId}`);
+      // Ensure the peer is in the state before updating
+      const peerData = peersRef.current.find((p) => p.userId === incomingUserId);
+      if (peerData) peerData.peer = peer; // Update peer reference
+    });
+
     return peer;
   };
 
@@ -207,7 +215,7 @@ const Video: React.FC<{ peer: SimplePeer.Instance; userName: string }> = ({ peer
 
   useEffect(() => {
     const handleStream = (stream: MediaStream) => {
-      if (ref.current) {
+      if (ref.current && !ref.current.srcObject) {
         ref.current.srcObject = stream;
         ref.current.play().catch((err) => console.error(`Failed to play video for ${userName}:`, err));
       }
@@ -221,7 +229,6 @@ const Video: React.FC<{ peer: SimplePeer.Instance; userName: string }> = ({ peer
     peer.on('error', handleError);
 
     return () => {
-      // Remove specific listeners using their references
       peer.off('stream', handleStream);
       peer.off('error', handleError);
     };
