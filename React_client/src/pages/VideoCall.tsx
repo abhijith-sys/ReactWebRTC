@@ -329,6 +329,11 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
 
         <div className="w-80 border-l border-gray-300 dark:border-gray-800">
           <div className="h-full flex flex-col">
+          <ScrollArea
+              style={{
+                height: "calc(100dvh - 130px)",
+              }}
+            >
             <div ref={chatScrollRef} className="flex-1 p-4 space-y-4 overflow-auto">
               {messages.map((message) => (
                 <div key={message.id} className="space-y-1">
@@ -346,6 +351,7 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
                 </div>
               ))}
             </div>
+            </ScrollArea>
             <div className="p-4 border-t border-gray-300 dark:border-gray-800">
               <div className="flex gap-2">
                 <Input
@@ -353,7 +359,7 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
                   placeholder="Write a message..."
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+                  onKeyDown={(e) => e.key === "Enter" && sendMessage()}
                 />
                 <Button size="icon" className="bg-blue-600 hover:bg-blue-700" onClick={sendMessage}>
                   <Send className="w-5 h-5" />
