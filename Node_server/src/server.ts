@@ -16,6 +16,14 @@ interface CustomSocket extends Socket {
   userName?: string;
 }
 
+interface ChatMessage {
+  id: string;
+  sender: string;
+  time: string;
+  content: string;
+  isLink?: boolean;
+}
+
 io.on('connection', (socket: CustomSocket) => {
   console.log('User connected:', socket.id);
 
@@ -37,15 +45,26 @@ io.on('connection', (socket: CustomSocket) => {
         userName: (io.sockets.sockets.get(id) as CustomSocket)?.userName || 'Unknown',
       }));
 
-    // Send existing users to the new joiner
     socket.emit('all-users', users);
-
-    // Notify existing users of the new joiner AND include their own userId so they can initiate
     socket.to(roomId).emit('user-connected', { userId: socket.id, userName, callerId: socket.id });
 
     socket.on('signal', (data: { userId: string; signal: any }) => {
-      console.log(`Relaying signal from ${socket.id} to ${data.userId}:`, data.signal);
+      console.log(`Relaying signal from ${socket.id} to ${data.userId}`);
       io.to(data.userId).emit('signal', { userId: socket.id, signal: data.signal });
+    });
+
+    socket.on('send-message', (content: string) => {
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const message: ChatMessage = {
+        id: uuidv4(),
+        sender: socket.userName || 'Unknown',
+        time,
+        content,
+        isLink: content.startsWith('http://') || content.startsWith('https://'),
+      };
+      console.log(`Received message from ${socket.id} (${socket.userName}) in room ${roomId}: ${content} (ID: ${message.id})`);
+      console.log(`Broadcasting message to room ${roomId}`);
+      io.to(roomId).emit('receive-message', message); // Broadcast to all in the room, including sender
     });
 
     socket.on('disconnect', () => {
@@ -58,4 +77,4 @@ io.on('connection', (socket: CustomSocket) => {
 const PORT = 5000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-}); 
+});

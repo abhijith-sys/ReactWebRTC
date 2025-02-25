@@ -12,46 +12,11 @@ import {
   MicOff,
   VideoOff,
 } from "lucide-react";
-import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 import { toast } from "sonner";
 import { useNavigate, useParams } from "react-router-dom";
-import { ModeToggle } from "./mode-toggle";
+import { ModeToggle } from "@/components/mode-toggle";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
-// Dummy chat messages
-const messages = [
-  {
-    id: 1,
-    sender: "Rendra",
-    time: "09:32",
-    content: "I think we should add more idea",
-  },
-  { id: 2, sender: "Lucas Do", time: "09:32", content: "Agree with that! 🔥" },
-  {
-    id: 3,
-    sender: "Caroline J.",
-    time: "09:33",
-    content: "https://dribbble.com/odamastudio/members",
-    isLink: true,
-  },
-  {
-    id: 4,
-    sender: "You",
-    time: "09:33",
-    content: 'Let\'s add "How we work" section',
-  },
-  {
-    id: 5,
-    sender: "Caroline J.",
-    time: "09:33",
-    content: "Yes, let's say we're the solution then",
-  },
-  {
-    id: 6,
-    sender: "Lucas Do",
-    time: "09:32",
-    content: "Fear enough! Let's rock, guys!",
-  },
-];
 interface Props {
   socket: Socket;
 }
@@ -62,6 +27,14 @@ interface PeerData {
   userName: string;
 }
 
+interface ChatMessage {
+  id: string;
+  sender: string;
+  time: string;
+  content: string;
+  isLink?: boolean;
+}
+
 const VideoCall: React.FC<Props> = ({ socket }) => {
   const { roomId, userName } = useParams();
   const [peers, setPeers] = useState<PeerData[]>([]);
@@ -69,13 +42,13 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [newMessage, setNewMessage] = useState("");
   const navigate = useNavigate();
   const myVideo = useRef<HTMLVideoElement>(null);
   const peersRef = useRef<PeerData[]>([]);
   const processedSignals = useRef<Set<string>>(new Set());
-
-
-
+  const chatScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -87,45 +60,37 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
         setStream(mediaStream);
         socket.emit("join-room", roomId, socket.id, userName);
 
-        socket.on(
-          "all-users",
-          (users: { userId: string; userName: string }[]) => {
-            if (!mediaStream) {
-              setError("Stream unavailable");
-              return;
-            }
-            const newPeers: PeerData[] = [];
-            users.forEach(({ userId, userName }) => {
-              if (!peersRef.current.some((p) => p.userId === userId)) {
-                const peer = createPeer(userId, socket.id, mediaStream); // New user initiates
-                newPeers.push({ peer, userId, userName });
-                peersRef.current.push({ peer, userId, userName });
-              }
-            });
-            setPeers((prev) => [...prev, ...newPeers]);
+        socket.on("all-users", (users: { userId: string; userName: string }[]) => {
+          if (!mediaStream) {
+            setError("Stream unavailable");
+            return;
           }
-        );
-
-        socket.on(
-          "user-connected",
-          ({ userId, userName }: { userId: string; userName: string }) => {
-            if (!mediaStream || userId === socket.id) return;
+          const newPeers: PeerData[] = [];
+          users.forEach(({ userId, userName }) => {
             if (!peersRef.current.some((p) => p.userId === userId)) {
-              const peer = addPeer(userId, socket.id, mediaStream); // Existing users wait for offer
+              const peer = createPeer(userId, socket.id, mediaStream);
+              newPeers.push({ peer, userId, userName });
               peersRef.current.push({ peer, userId, userName });
-              setPeers((prev) => [...prev, { peer, userId, userName }]);
             }
+          });
+          setPeers((prev) => [...prev, ...newPeers]);
+        });
+
+        socket.on("user-connected", ({ userId, userName }: { userId: string; userName: string }) => {
+          if (!mediaStream || userId === socket.id) return;
+          if (!peersRef.current.some((p) => p.userId === userId)) {
+            const peer = addPeer(userId, socket.id, mediaStream);
+            peersRef.current.push({ peer, userId, userName });
+            setPeers((prev) => [...prev, { peer, userId, userName }]);
           }
-        );
+        });
 
         socket.on("signal", (data: { userId: string; signal: any }) => {
           const item = peersRef.current.find((p) => p.userId === data.userId);
           if (item && !item.peer.destroyed) {
-            const signalKey =
-              data.signal.sdp || JSON.stringify(data.signal.candidate || {});
+            const signalKey = data.signal.sdp || JSON.stringify(data.signal.candidate || {});
             if (!processedSignals.current.has(signalKey)) {
               processedSignals.current.add(signalKey);
-              console.log(`Signaling ${data.userId} with`, data.signal);
               item.peer.signal(data.signal);
             }
           }
@@ -134,16 +99,24 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
         socket.on("user-disconnected", (userId: string) => {
           const peerObj = peersRef.current.find((p) => p.userId === userId);
           if (peerObj) peerObj.peer.destroy();
-          peersRef.current = peersRef.current.filter(
-            (p) => p.userId !== userId
-          );
+          peersRef.current = peersRef.current.filter((p) => p.userId !== userId);
           setPeers((prev) => prev.filter((p) => p.userId !== userId));
         });
+
+        socket.on("receive-message", (message: ChatMessage) => {
+          console.log(`Received message from ${message.sender}: ${message.content} (ID: ${message.id})`);
+          setMessages((prev) => {
+            // Prevent duplicates based on message ID
+            if (prev.some((msg) => msg.id === message.id)) {
+              return prev;
+            }
+            return [...prev, message];
+          });
+        });
+
       } catch (err) {
         console.error("Failed to initialize media stream:", err);
-        setError(
-          "Could not access camera/microphone. Please check permissions."
-        );
+        setError("Could not access camera/microphone. Please check permissions.");
       }
     };
 
@@ -155,23 +128,24 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
       socket.off("user-connected");
       socket.off("signal");
       socket.off("user-disconnected");
+      socket.off("receive-message");
     };
   }, [socket, roomId, userName]);
 
   useEffect(() => {
     if (myVideo.current && stream) {
       myVideo.current.srcObject = stream;
-      myVideo.current
-        .play()
-        .catch((err) => console.error("Failed to play local video:", err));
+      myVideo.current.play().catch((err) => console.error("Failed to play local video:", err));
     }
   }, [stream]);
 
-  const createPeer = (
-    userToSignal: string,
-    callerId: string,
-    stream: MediaStream
-  ) => {
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const createPeer = (userToSignal: string, callerId: string, stream: MediaStream) => {
     const peer = new SimplePeer({
       initiator: true,
       trickle: true,
@@ -184,21 +158,12 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
     });
 
     peer.on("error", (err) => console.error("Peer error in createPeer:", err));
-    peer.on("stream", (remoteStream) => {
-      console.log(`Received stream from ${userToSignal}`);
-      // Ensure the peer is in the state before updating
-      const peerData = peersRef.current.find((p) => p.userId === userToSignal);
-      if (peerData) peerData.peer = peer; // Update peer reference
-    });
+    peer.on("stream", () => {});
 
     return peer;
   };
 
-  const addPeer = (
-    incomingUserId: string,
-    callerId: string,
-    stream: MediaStream
-  ) => {
+  const addPeer = (incomingUserId: string, callerId: string, stream: MediaStream) => {
     const peer = new SimplePeer({
       initiator: false,
       trickle: true,
@@ -211,24 +176,14 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
     });
 
     peer.on("error", (err) => console.error("Peer error in addPeer:", err));
-    peer.on("stream", (remoteStream) => {
-      console.log(`Received stream from ${incomingUserId}`);
-      // Ensure the peer is in the state before updating
-      const peerData = peersRef.current.find(
-        (p) => p.userId === incomingUserId
-      );
-      if (peerData) peerData.peer = peer; // Update peer reference
-    });
+    peer.on("stream", () => {});
 
     return peer;
   };
 
   const toggleAudio = () => {
     if (stream) {
-      toast(
-        audioEnabled ? "You have muted your mic" : "Your mic is now unmuted"
-      );
-
+      toast(audioEnabled ? "You have muted your mic" : "Your mic is now unmuted");
       stream.getAudioTracks()[0].enabled = !audioEnabled;
       setAudioEnabled(!audioEnabled);
     }
@@ -236,9 +191,7 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
 
   const toggleVideo = () => {
     if (stream) {
-      toast(
-        videoEnabled ? "You have turned off your video" : "Your video is now on"
-      );
+      toast(videoEnabled ? "You have turned off your video" : "Your video is now on");
       stream.getVideoTracks()[0].enabled = !videoEnabled;
       setVideoEnabled(!videoEnabled);
     }
@@ -248,6 +201,13 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
     stream?.getTracks().forEach((track) => track.stop());
     socket.disconnect();
     navigate(`/`);
+  };
+
+  const sendMessage = () => {
+    if (newMessage.trim() === "") return;
+    console.log(`Sending message: ${newMessage}`);
+    socket.emit("send-message", newMessage);
+    setNewMessage("");
   };
 
   if (error) {
@@ -261,7 +221,6 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
 
   return (
     <div className="flex flex-col h-screen bg-white dark:bg-black text-black dark:text-white">
-      {/* Top bar */}
       <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-gray-800">
         <div className="flex items-center gap-4">
           <div className="p-2 bg-blue-600 rounded-lg">
@@ -271,7 +230,7 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
         </div>
         <div className="flex items-center gap-4">
           <Avatar>
-            <AvatarImage src="https://github.com/shadcn.pngs" />
+            <AvatarImage src="https://github.com/shadcn.png" />
             <AvatarFallback className="bg-slate-400 uppercase">
               {userName?.slice(0, 2)}
             </AvatarFallback>
@@ -280,32 +239,18 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
         </div>
       </div>
 
-      {/* Main content */}
       <div className="flex flex-1">
-        {/* Video area */}
         <div className="flex-1 p-4">
-          {/* Participant thumbnails */}
-          <ScrollArea
-            className="whitespace-nowrap rounded-md"
-            style={{
-              width: "calc(100vw -350px)",
-            }}
-          >
+          <ScrollArea className="whitespace-nowrap rounded-md" style={{ width: "calc(100vw - 350px)" }}>
             <div className="min-h-28 flex gap-2 mb-4 w-max">
               {peers?.length > 0 ? (
                 peers.map((participant) => (
                   <div key={participant.userId} className="relative">
                     <div className="w-48 h-28 bg-gray-200 dark:bg-gray-800 rounded-lg overflow-hidden">
-                      <Video
-                        key={participant.userId}
-                        peer={participant.peer}
-                        userName={participant.userName}
-                      />
+                      <Video key={participant.userId} peer={participant.peer} userName={participant.userName} />
                     </div>
                     <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-                      <span className="text-sm bg-black/50 px-2 py-1 rounded">
-                        {participant.userName}
-                      </span>
+                      <span className="text-sm bg-black/50 px-2 py-1 rounded">{participant.userName}</span>
                     </div>
                   </div>
                 ))
@@ -313,9 +258,7 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
                 <div className="relative">
                   <div className="w-48 h-28 bg-gray-200 dark:bg-gray-800 rounded-lg overflow-hidden"></div>
                   <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-                    <span className="text-sm bg-black/50 px-2 py-1 rounded">
-                      No participants
-                    </span>
+                    <span className="text-sm bg-black/50 px-2 py-1 rounded">No participants</span>
                   </div>
                 </div>
               )}
@@ -323,21 +266,13 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
 
-          {/* Main video */}
           <div className="relative rounded-lg overflow-hidden h-[calc(100vh-280px)]">
             {stream && (
               <>
-                <video
-                  ref={myVideo}
-                  autoPlay
-                  muted
-                  className="w-full h-full object-cover"
-                />
+                <video ref={myVideo} autoPlay muted className="w-full h-full object-cover" />
                 {!videoEnabled && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                    <span className="text-white">
-                      Your video is currently turned off
-                    </span>
+                    <span className="text-white">Your video is currently turned off</span>
                   </div>
                 )}
                 <div className="absolute bottom-4 left-4 bg-black/50 px-3 py-1.5 rounded-lg">
@@ -347,12 +282,9 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
             )}
           </div>
 
-          {/* Bottom controls */}
           <div className="flex items-center justify-between mt-4 px-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                {roomId}
-              </span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">{roomId}</span>
               <Button
                 variant="ghost"
                 size="icon"
@@ -363,17 +295,8 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
               </Button>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="destructive"
-                size="icon"
-                onClick={toggleAudio}
-                disabled={!stream}
-              >
-                {audioEnabled ? (
-                  <Mic className="w-4 h-4" />
-                ) : (
-                  <MicOff className="w-4 h-4" />
-                )}
+              <Button variant="destructive" size="icon" onClick={toggleAudio} disabled={!stream}>
+                {audioEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
               </Button>
               <Button
                 variant="ghost"
@@ -382,11 +305,7 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
                 onClick={toggleVideo}
                 disabled={!stream}
               >
-                {videoEnabled ? (
-                  <VIcon className="w-4 h-4" />
-                ) : (
-                  <VideoOff className="w-4 h-4" />
-                )}
+                {videoEnabled ? <VIcon className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
               </Button>
               <Button
                 variant="ghost"
@@ -406,25 +325,18 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
           </div>
         </div>
 
-        {/* Chat sidebar */}
         <div className="w-80 border-l border-gray-300 dark:border-gray-800">
           <div className="h-full flex flex-col">
-            <div className="flex-1 p-4 space-y-4 overflow-auto">
+            <div ref={chatScrollRef} className="flex-1 p-4 space-y-4 overflow-auto">
               {messages.map((message) => (
                 <div key={message.id} className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">
-                      {message.sender}
-                    </span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {message.time}
-                    </span>
+                    <span className="text-sm font-medium">{message.sender}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{message.time}</span>
                   </div>
                   <p
                     className={`text-sm ${
-                      message.isLink
-                        ? "text-blue-400"
-                        : "text-gray-600 dark:text-gray-300"
+                      message.isLink ? "text-blue-400" : "text-gray-600 dark:text-gray-300"
                     }`}
                   >
                     {message.content}
@@ -437,8 +349,11 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
                 <Input
                   className="bg-gray-200 dark:bg-gray-800 border-0"
                   placeholder="Write a message..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && sendMessage()}
                 />
-                <Button size="icon" className="bg-blue-600 hover:bg-blue-700">
+                <Button size="icon" className="bg-blue-600 hover:bg-blue-700" onClick={sendMessage}>
                   <Send className="w-5 h-5" />
                 </Button>
               </div>
@@ -450,26 +365,19 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
   );
 };
 
-const Video: React.FC<{ peer: SimplePeer.Instance; userName: string }> = ({
-  peer,
-  userName,
-}) => {
+const Video: React.FC<{ peer: SimplePeer.Instance; userName: string }> = ({ peer, userName }) => {
   const ref = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const handleStream = (stream: MediaStream) => {
       if (ref.current && !ref.current.srcObject) {
         ref.current.srcObject = stream;
-        ref.current
-          .play()
-          .catch((err) =>
-            console.error(`Failed to play video for ${userName}:`,` err`)
-          );
+        ref.current.play().catch((err) => console.error(`Failed to play video for ${userName}:`, err));
       }
     };
 
     const handleError = (err: Error) => {
-      console.error(`Video component peer error for ${userName}`, `err`);
+      console.error(`Video component peer error for ${userName}`, err);
     };
 
     peer.on("stream", handleStream);
@@ -487,4 +395,5 @@ const Video: React.FC<{ peer: SimplePeer.Instance; userName: string }> = ({
     </video>
   );
 };
+
 export default VideoCall;
