@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import styles from './LandingPage.module.css';
 import meetingImg from "../../assets/change.svg"
+import { useNavigate } from 'react-router-dom';
+import { Socket } from 'socket.io-client';
 
 interface Props {
-  joinRoom: (name: string, room: string) => void;
-  createRoom: (name: string) => void;
+ socket: Socket;
 }
 
-const LandingPage: React.FC<Props> = ({ joinRoom, createRoom }) => {
+const LandingPage: React.FC<Props> = ({ socket }) => {
   const [name, setName] = useState('');
   const [roomId, setRoomId] = useState('');
+  const navigate = useNavigate();
 
   const handleJoinRoom = () => {
     if (name && roomId) {
@@ -21,6 +23,16 @@ const LandingPage: React.FC<Props> = ({ joinRoom, createRoom }) => {
     if (name) {
       createRoom(name);
     }
+  };
+
+  const joinRoom = (name: string, room: string) => {
+    navigate(`/room/${room}/${name}`);
+  };
+
+  const createRoom = (name: string) => {
+    socket.emit('create-room', (newRoomId: string) => {
+      navigate(`/room/${newRoomId}/${name}`);
+    });
   };
 
   return (

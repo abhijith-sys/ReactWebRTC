@@ -1,38 +1,27 @@
-import { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { io } from 'socket.io-client';
-import VideoCall from './components/VideoCall';
-import global from 'global'
-import * as process from "process";
 import LandingPage from './pages/LandingPage/LandingPage';
-global.process = process;
+import VideoCall from './components/VideoCall';
+import { Toaster } from './components/ui/sonner.tsx'
+import { ThemeProvider } from './components/theme-provider.tsx';
 
 const socket = io('http://localhost:5000');
 
 function App() {
-  const [roomId, setRoomId] = useState<string | null>(null);
-  const [userName, setUserName] = useState<string>('');
-
-  const joinRoom = (name: string, room: string) => {
-    setUserName(name);
-    setRoomId(room);
-  };
-
-  const createRoom = (name: string) => {
-    setUserName(name);
-    socket.emit('create-room', (newRoomId: string) => {
-      setRoomId(newRoomId);
-    });
-  };
-
   return (
-    <>
-      {roomId ? (
-        <VideoCall socket={socket} roomId={roomId} userName={userName} />
-      ) : (
-        <LandingPage joinRoom={joinRoom} createRoom={createRoom} />
-      )}
-    </>
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+    <Toaster />
+    <Router>
+      <Routes>
+        <Route path="/" element={<LandingPage socket={socket} />} />
+        <Route path="/room/:roomId/:userName" element={ <VideoCall socket={socket} /> } />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </Router>
+    </ThemeProvider>
   );
 }
+
+
 
 export default App;
