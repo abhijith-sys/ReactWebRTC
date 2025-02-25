@@ -1,0 +1,74 @@
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100vh;
+  background: #f9f9f9;
+  transition: background 0.3s ease;
+}
+
+.dark-mode {
+  background: #181818;
+  color: white;
+}
+
+.landing {
+  padding: 20px;
+  max-width: 400px;
+}
+
+input {
+  padding: 10px;
+  margin: 10px;
+  width: 80%;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+button {
+  padding: 10px;
+  margin: 5px;
+  border: none;
+  background: #007bff;
+  color: white;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+button:hover {
+  background: #0056b3;
+}
+
+.video-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+video {
+  width: 250px;
+  height: 150px;
+  background: black;
+  border-radius: 5px;
+}
+
+.controls {
+  margin-top: 10px;
+}
+
+.leave-btn {
+  background: red;
+}
+
+.dark-mode-toggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #444;
+}
