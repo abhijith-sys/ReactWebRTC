@@ -219,6 +219,11 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
     );
   }
 
+  const share =()=>{
+    const currentUrl = `${window.location.origin}/room/${roomId}`;
+    navigator.clipboard.writeText(currentUrl);
+    toast("Room ID copied to clipboard");
+  }
   return (
     <div className="flex flex-col h-screen bg-white dark:bg-black text-black dark:text-white">
       <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-gray-800">
@@ -289,7 +294,7 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
                 variant="ghost"
                 size="icon"
                 className="text-gray-500 dark:text-gray-400"
-                onClick={() => navigator.clipboard.writeText(roomId)}
+                onClick={share}
               >
                 <Share2 className="w-4 h-4" />
               </Button>
@@ -299,9 +304,9 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
                 {audioEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
               </Button>
               <Button
-                variant="ghost"
+                variant="destructive"
                 size="icon"
-                className="bg-gray-200 dark:bg-gray-800"
+                // className="bg-gray-200 dark:bg-gray-800"
                 onClick={toggleVideo}
                 disabled={!stream}
               >
@@ -311,10 +316,7 @@ const VideoCall: React.FC<Props> = ({ socket }) => {
                 variant="ghost"
                 size="icon"
                 className="bg-gray-200 dark:bg-gray-800"
-                onClick={() => {
-                  navigator.clipboard.writeText(roomId);
-                  toast("Room ID copied to clipboard");
-                }}
+                onClick={share}
               >
                 <Share2 className="w-4 h-4" />
               </Button>

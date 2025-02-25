@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { Input } from "./ui/input";
+import { Button } from "./ui/button";
 
 interface UsernamePromptProps {
   open: boolean;
@@ -21,31 +23,28 @@ const UsernamePrompt: React.FC<UsernamePromptProps> = ({ open, onClose }) => {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-        <h2 className="text-xl font-semibold text-center mb-4">Enter Your Name</h2>
-        <input
+<div className="fixed inset-0 flex items-center justify-center backdrop-blur-md bg-black/30">
+      <div className="bg-white/90 p-6 rounded-lg shadow-lg w-96 border border-white/20">
+        <h2 className="text-xl font-semibold text-center mb-4 text-black">
+          Enter Your Name
+        </h2>
+        <Input
           type="text"
           placeholder="Your name"
           value={tempUserName}
           onChange={(e) => setTempUserName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="text-black"
         />
         <div className="flex justify-between mt-4">
-          <button
+          <Button
             onClick={handleSubmit}
             disabled={!tempUserName.trim()}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400"
           >
             Join Room
-          </button>
-          <button
-            onClick={() => navigate("/")}
-            className="px-4 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400"
-          >
-            Cancel
-          </button>
+          </Button>
+          <Button onClick={() => navigate("/")}>Cancel</Button>
         </div>
       </div>
     </div>
